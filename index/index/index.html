@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аркада: Игры с Ботами и Компаньоном</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #ff6584;
+            --secondary: #6c63ff;
+            --accent: #43e97b;
+            --bg: #0f1020;
+            --card-bg: #1a1c38;
+            --text: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a1c38, #2a1b4e);
+            border-bottom: 3px solid var(--secondary);
+            box-shadow: 0 4px 20px rgba(108, 99, 255, 0.3);
+        }
+
+        h1 {
+            font-family: 'Comfortaa', cursive;
+            margin: 0;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Главное меню */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border: 2px solid var(--secondary);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 25px rgba(255, 101, 132, 0.4);
+        }
+
+        .game-card h3 {
+            font-family: 'Comfortaa', cursive;
+            color: var(--primary);
+            margin-top: 0;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--secondary), var(--primary));
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Roboto', sans-serif;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        /* Игровые экраны */
+        .screen {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 2px solid var(--secondary);
+            padding: 30px;
+            box-sizing: border-box;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            margin-bottom: 40px;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .back-btn {
+            background: #444;
+            margin-bottom: 20px;
+        }
+
+        /* Компаньон (Маскот) */
+        #companion {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #25284f;
+            border: 3px solid var(--primary);
+            border-radius: 20px;
+            padding: 15px;
+            width: 250px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            transition: transform 0.3s;
+        }
+
+        #companion-avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            animation: float 2s infinite ease-in-out;
+            flex-shrink: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        #companion-speech {
+            font-size: 13px;
+            line-height: 1.3;
+        }
+
+        /* Панель ботов и прогресс */
+        .race-track {
+            background: #111328;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 15px 0;
+            border: 1px solid #333;
+        }
+
+        .racer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .progress-bar-container {
+            flex: 1;
+            background: #222;
+            height: 10px;
+            border-radius: 5px;
+            margin: 0 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        .bot-bar { background: var(--primary); }
+
+        /* Таблицы, сетки для Судоку и Пятнашек */
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 2px;
+            max-width: 360px;
+            margin: 20px auto;
+            background: var(--secondary);
+            border: 2px solid var(--secondary);
+        }
+
+        .sudoku-cell {
+            aspect-ratio: 1;
+            background: var(--card-bg);
+            border: none;
+            text-align: center;
+            font-size: 16px;
+            color: white;
+        }
+        .sudoku-cell:focus { background: #2a2d58; outline: none; }
+
+        .fifteen-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            max-width: 320px;
+            margin: 20px auto;
+        }
+
+        .fifteen-tile {
+            aspect-ratio: 1;
+            background: var(--secondary);
+            border: none;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .fifteen-tile:hover { background: var(--primary); }
+        .fifteen-tile.empty { background: transparent; cursor: default; }
+
+        /* Поле чудес и Миллионер */
+        .wheel-word {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .letter-box {
+            width: 40px;
+            height: 50px;
+            background: #111;
+            border: 2px solid var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+
+        .question-box {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background: #25284f;
+            border: 2px solid var(--secondary);
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            transition: 0.2s;
+        }
+        .option-btn:hover { background: var(--secondary); }
+
+        /* Скример оверлей */
+        #jumpscare-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s ease;
+        }
+        #jumpscare-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+            animation: shake 0.1s infinite;
+        }
+        @keyframes shake {
+            0% { transform: translate(5px, 5px) rotate(0deg); }
+            20% { transform: translate(-5px, -8px) rotate(-3deg); }
+            40% { transform: translate(-10px, 5px) rotate(3deg); }
+            60% { transform: translate(5px, 10px) rotate(0deg); }
+            80% { transform: translate(10px, -5px) rotate(-3deg); }
+            100% { transform: translate(-5px, 5px) rotate(3deg); }
+        }
+        #jumpscare-face {
+            font-size: 120px;
+            color: #ff0033;
+            text-shadow: 0 0 30px #ff0000;
+        }
+        #jumpscare-text {
+            font-family: 'Press Start 2P', monospace;
+            color: #ff0033;
+            font-size: 24px;
+            margin-top: 20px;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        .stats-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 15px;
+            color: #a0a5cc;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎮 Мега-Аркада с Ботами и Компаньоном</h1>
+    </header>
+
+    <div class="container">
+        <!-- Главное меню выбора игр -->
+        <div id="main-menu" class="screen active" style="display: block; max-width: 1000px;">
+            <h2 style="text-align: center; font-family: 'Comfortaa'; color: var(--primary);">Выберите игру для состязания с ботами:</h2>
+            <div class="game-grid">
+                <div class="game-card" onclick="startApp('guess')">
+                    <div>
+                        <h3>Угадай число</h3>
+                        <p>Угадайте загаданное число от 1 до 100 быстрее бота!</p>
+                    </div>
+                    <button class="btn">Играть</button>
+                </div>
+                <div class="game-card" onclick="startApp('sudoku')">
+                    <div>
+                        <h3>Судоку (Лёгкое)</h3>
+                        <p>Заполните сетку цифрами быстрее соперника.</p>
+                    </div>
+                    <button class="btn">Играть</button>
+                </div>
+                <div class="game-card" onclick="startApp('htmlQuiz')">
+                    <div>
+                        <h3>Викторина HTML</h3>
+                        <p>Проверьте свои знания верстки и тегов в гонке с ботом.</p>
+                    </div>
+                    <button class="btn">Играть</button>
+                </div>
+                <div class="game-card" onclick="startApp('fieldOfMiracles')">
+                    <div>
+                        <h3>Поле Чудес</h3>
+                        <p>Угадайте слово по буквам раньше кибер-соперника.</p>
+                    </div>
+                    <button class="btn">Играть</button>
+                </div>
+                <div class="game-card" onclick="startApp('millionaire')">
+                    <div>
+                        <h3>Кто хочет стать миллионером</h3>
+                        <p>Интеллектуальная дуэль на скорость и точность.</p>
+                    </div>
+                    <button class="btn">Играть</button>
+                </div>
+                <div class="game-card" onclick="startApp('fifteen')">
+                    <div>
+                        <h3>Игра «15»</h3>
+                        <p>Соберите классическую головоломку по порядку.</p>
+                    </div>
+                    <button class="btn">Играть</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. Угадай число -->
+        <div id="screen-guess" class="screen">
+            <button class="btn back-btn" onclick="goToMenu()">← В меню</button>
+            <h2>🎯 Угадай число (1 - 100)</h2>
+            <div class="stats-info"><span id="guess-hint">Введите число ниже:</span> <span id="guess-attempts">Попыток: 0</span></div>
+            
+            <div class="race-track">
+                <div class="racer"><span>Вы</span><div class="progress-bar-container"><div id="pbar-player" class="progress-bar"></div></div><span id="pstat-player">0%</span></div>
+                <div class="racer"><span>🤖 Бот Боб</span><div class="progress-bar-container"><div id="pbar-bot1" class="progress-bar bot-bar"></div></div><span id="pstat-bot1">0%</span></div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <input type="number" id="guess-input" placeholder="Ваше число" style="padding: 10px; font-size: 16px; border-radius: 8px; border: 2px solid var(--secondary); background: #111; color: white; width: 150px;">
+                <button class="btn" onclick="guessSubmit()">Угадать</button>
+            </div>
+        </div>
+
+        <!-- 2. Судоку -->
+        <div id="screen-sudoku" class="screen">
+            <button class="btn back-btn" onclick="goToMenu()">← В меню</button>
+            <h2>🧩 Мини-Судоку (4x4 для скорости)</h2>
+            <div class="race-track">
+                <div class="racer"><span>Вы</span><div class="progress-bar-container"><div id="pbar-sudoku" class="progress-bar"></div></div></div>
+                <div class="racer"><span>🤖 Бот Сэм</span><div class="progress-bar-container"><div id="pbar-botsudoku" class="progress-bar bot-bar"></div></div></div>
+            </div>
+            <div id="sudoku-container" style="display: flex; justify-content: center;"></div>
+            <div style="text-align: center; margin-top: 15px;"><button class="btn" onclick="checkSudoku()">Проверить</button></div>
+        </div>
+
+        <!-- 3. Викторина HTML -->
+        <div id="screen-htmlQuiz" class="screen">
+            <button class="btn back-btn" onclick="goToMenu()">← В меню</button>
+            <h2>💻 Викторина по знанию HTML</h2>
+            <div class="race-track">
+                <div class="racer"><span>Вы (Вопрос <span id="html-qnum">1</span>/5)</span><div class="progress-bar-container"><div id="pbar-html" class="progress-bar"></div></div></div>
+                <div class="racer"><span>🤖 Бот Джип</span><div class="progress-bar-container"><div id="pbar-bothtml" class="progress-bar bot-bar"></div></div></div>
+            </div>
+            <div class="question-box" id="html-question">Загрузка вопроса...</div>
+            <div class="options-grid" id="html-options"></div>
+        </div>
+
+        <!-- 4. Поле чудес -->
+        <div id="screen-fieldOfMiracles" class="screen">
+            <button class="btn back-btn" onclick="goToMenu()">← В меню</button>
+            <h2>🎡 Поле Чудес (Тема: Веб-технологии)</h2>
+            <div class="race-track">
+                <div class="racer"><span>Вы</span><div class="progress-bar-container"><div id="pbar-fom" class="progress-bar"></div></div></div>
+                <div class="racer"><span>🤖 Бот Якуб</span><div class="progress-bar-container"><div id="pbar-botfom" class="progress-bar bot-bar"></div></div></div>
+            </div>
+            <div class="question-box" id="fom-hint">Подсказка: ...</div>
+            <div class="wheel-word" id="fom-word-container"></div>
+            <div style="text-align: center; margin-top: 15px;">
+                <input type="text" id="fom-letter-input" maxlength="1" placeholder="Буква" style="padding: 10px; width: 60px; font-size: 18px; text-align: center; background: #111; color: white; border: 2px solid var(--secondary); border-radius: 5px;">
+                <button class="btn" onclick="fomGuessLetter()">Открыть букву</button>
+            </div>
+        </div>
+
+        <!-- 5. Кто хочет стать миллионером -->
+        <div id="screen-millionaire" class="screen">
+            <button class="btn back-btn" onclick="goToMenu()">← В меню</button>
+            <h2>💰 Кто хочет стать миллионером</h2>
+            <div class="stats-info"><span>Вопрос <span id="mil-step">1</span> из 5</span> <span id="mil-prize">Приз: 0 руб.</span></div>
+            <div class="race-track">
+                <div class="racer"><span>Вы</span><div class="progress-bar-container"><div id="pbar-mil" class="progress-bar"></div></div></div>
+                <div class="racer"><span>🤖 Бот Галкин</span><div class="progress-bar-container"><div id="pbar-botmil" class="progress-bar bot-bar"></div></div></div>
+            </div>
+            <div class="question-box" id="mil-question">Вопрос...</div>
+            <div class="options-grid" id="mil-options"></div>
+        </div>
+
+        <!-- 6. Игра 15 -->
+        <div id="screen-fifteen" class="screen">
+            <button class="btn back-btn" onclick="goToMenu()">← В меню</button>
+            <h2>🔢 Головоломка «15»</h2>
+            <div class="race-track">
+                <div class="racer"><span>Вы</span><div class="progress-bar-container"><div id="pbar-fifteen" class="progress-bar"></div></div></div>
+                <div class="racer"><span>🤖 Бот Нуми</span><div class="progress-bar-container"><div id="pbar-botfifteen" class="progress-bar bot-bar"></div></div></div>
+            </div>
+            <div class="fifteen-grid" id="fifteen-board"></div>
+        </div>
+    </div>
+
+    <!-- Компаньон -->
+    <div id="companion">
+        <div id="companion-avatar">🐱</div>
+        <div id="companion-speech">Привет! Я Луна, твой пушистый помощник. Желаю победы в игре!</div>
+    </div>
+
+    <!-- Скример Оверлей -->
+    <div id="jumpscare-overlay">
+        <div id="jumpscare-face">😱</div>
+        <div id="jumpscare-text">ПОРАЖЕНИЕ! ТЫ ПРОИГРАЛ БОТУ!</div>
+    </div>
+
+    <script>
+        // --- Аудио движок (Web Audio API) ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'cute_click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554, now + 0.1);
+                osc.frequency.setValueAtTime(659, now + 0.2);
+                osc.frequency.setValueAtTime(880, now + 0.3);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            } else if (type === 'jump_scare') {
+                // Жуткий гул + резкий скрежет
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.8);
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1.2);
+                osc.start(now);
+                osc.stop(now + 1.2);
+            }
+        }
+
+        // Фоновая музыкальная мелодия
+        let musicInterval = null;
+        function startMusic() {
+            initAudio();
+            if (musicInterval) return;
+            const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88];
+            musicInterval = setInterval(() => {
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = notes[Math.floor(Math.random() * notes.length)];
+                gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }, 600);
+        }
+
+        // --- Управление экранами и компаньоном ---
+        const companionPhrases = [
+            "Ты справишься, я в тебя верю!",
+            "Ого, как быстро думает бот, поднажми!",
+            "Какой интересный уровень!",
+            "Не сдавайся, победа близко!",
+            "Мяу! Отличный ход!"
+        ];
+
+        setInterval(() => {
+            const p = companionPhrases[Math.floor(Math.random() * companionPhrases.length)];
+            document.getElementById('companion-speech').innerText = p;
+            playSound('cute_click');
+        }, 8000);
+
+        function goToMenu() {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('main-menu').classList.add('active');
+            stopBotRace();
+        }
+
+        function startApp(gameName) {
+            startMusic();
+            initAudio();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + gameName).classList.add('active');
+            
+            if (gameName === 'guess') initGuessGame();
+            if (gameName === 'sudoku') initSudokuGame();
+            if (gameName === 'htmlQuiz') initHtmlQuiz();
+            if (gameName === 'fieldOfMiracles') initFOMGame();
+            if (gameName === 'millionaire') initMillionaire();
+            if (gameName === 'fifteen') initFifteen();
+        }
+
+        let botTimer = null;
+        function stopBotRace() {
+            if (botTimer) clearInterval(botTimer);
+        }
+
+        function triggerWin() {
+            stopBotRace();
+            playSound('win');
+            alert('🎉 Поздравляем! Вы победили бота!');
+            goToMenu();
+        }
+
+        function triggerLose() {
+            stopBotRace();
+            playSound('jump_scare');
+            const overlay = document.getElementById('jumpscare-overlay');
+            overlay.classList.add('active');
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                goToMenu();
+            }, 1800);
+        }
+
+        // --- 1. Игра: Угадай число ---
+        let guessTarget = 0, guessAttempts = 0, botGuessProgress = 0;
+        function initGuessGame() {
+            guessTarget = Math.floor(Math.random() * 100) + 1;
+            guessAttempts = 0;
+            botGuessProgress = 0;
+            document.getElementById('guess-attempts').innerText = 'Попыток: 0';
+            document.getElementById('guess-hint').innerText = 'Загадано число от 1 до 100';
+            document.getElementById('pbar-player').style.width = '0%';
+            document.getElementById('pbar-bot1').style.width = '0%';
+
+            // Запуск бота
+            stopBotRace();
+            botTimer = setInterval(() => {
+                botGuessProgress += Math.floor(Math.random() * 15) + 5;
+                if (botGuessProgress >= 100) {
+                    botGuessProgress = 100;
+                    document.getElementById('pbar-bot1').style.width = '100%';
+                    document.getElementById('pstat-bot1').innerText = '100%';
+                    triggerLose();
+                } else {
+                    document.getElementById('pbar-bot1').style.width = botGuessProgress + '%';
+                    document.getElementById('pstat-bot1').innerText = botGuessProgress + '%';
+                }
+            }, 1000);
+        }
+
+        function guessSubmit() {
+            playSound('cute_click');
+            const val = parseInt(document.getElementById('guess-input').value);
+            if (isNaN(val)) return;
+            guessAttempts++;
+            document.getElementById('guess-attempts').innerText = 'Попыток: ' + guessAttempts;
+            let pPercent = Math.min(100, (guessAttempts / 10) * 100);
+            document.getElementById('pbar-player').style.width = pPercent + '%';
+            document.getElementById('pstat-player').innerText = Math.round(pPercent) + '%';
+
+            if (val === guessTarget) {
+                triggerWin();
+            } else if (val < guessTarget) {
+                document.getElementById('guess-hint').innerText = 'Мое число БОЛЬШЕ!';
+            } else {
+                document.getElementById('guess-hint').innerText = 'Мое число МЕНЬШЕ!';
+            }
+        }
+
+        // --- 2. Судоку ---
+        let botSudokuProgress = 0;
+        function initSudokuGame() {
+            botSudokuProgress = 0;
+            document.getElementById('pbar-sudoku').style.width = '0%';
+            document.getElementById('pbar-botsudoku').style.width = '0%';
+            
+            const container = document.getElementById('sudoku-container');
+            container.innerHTML = `<div class="sudoku-grid">
+                <input class="sudoku-cell" maxlength="1" value="1" disabled>
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="2">
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="3">
+                <input class="sudoku-cell" maxlength="1" value="4" disabled>
+
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="3">
+                <input class="sudoku-cell" maxlength="1" value="4" disabled>
+                <input class="sudoku-cell" maxlength="1" value="1" disabled>
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="2">
+
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="4">
+                <input class="sudoku-cell" maxlength="1" value="1" disabled>
+                <input class="sudoku-cell" maxlength="1" value="2" disabled>
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="3">
+
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="2">
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="3">
+                <input class="sudoku-cell s-input" maxlength="1" data-ans="4">
+                <input class="sudoku-cell" maxlength="1" value="1" disabled>
+            </div>`;
+
+            stopBotRace();
+            botTimer = setInterval(() => {
+                botSudokuProgress += 20;
+                document.getElementById('pbar-botsudoku').style.width = botSudokuProgress + '%';
+                if (botSudokuProgress >= 100) triggerLose();
+            }, 1500);
+        }
+
+        function checkSudoku() {
+            playSound('cute_click');
+            const inputs = document.querySelectorAll('.s-input');
+            let correct = true;
+            inputs.forEach(inp => {
+                if (inp.value !== inp.dataset.ans) correct = false;
+            });
+            document.getElementById('pbar-sudoku').style.width = correct ? '100%' : '50%';
+            if (correct) triggerWin();
+            else alert('Есть ошибки в заполнении!');
+        }
+
+        // --- 3. Викторина HTML ---
+        const htmlQuestions = [
+            { q: "Какой тег используется для создания главной ссылки?", options: ["<a>", "<link>", "<href>", "<url>"], ans: 0 },
+            { q: "Какой тег задает самую крупную заголовку?", options: ["<h6>", "<header>", "<h1>", "<head>"], ans: 2 },
+            { q: "С помощью какого тега вставляется картинка?", options: ["<image>", "<img>", "<pic>", "<src>"], ans: 1 },
+            { q: "Какой тег создает маркированный список?", options: ["<ol>", "<list>", "<ul>", "<li>"], ans: 2 },
+            { q: "Какой атрибут задает путь к источнику в теге <img>?", options: ["href", "link", "src", "path"], ans: 2 }
+        ];
+        let currentHtmlQ = 0, botHtmlProgress = 0;
+
+        function initHtmlQuiz() {
+            currentHtmlQ = 0;
+            botHtmlProgress = 0;
+            document.getElementById('pbar-html').style.width = '0%';
+            document.getElementById('pbar-bothtml').style.width = '0%';
+            loadHtmlQuestion();
+
+            stopBotRace();
+            botTimer = setInterval(() => {
+                botHtmlProgress += 20;
+                document.getElementById('pbar-bothtml').style.width = botHtmlProgress + '%';
+                if (botHtmlProgress >= 100) triggerLose();
+            }, 2200);
+        }
+
+        function loadHtmlQuestion() {
+            if (currentHtmlQ >= htmlQuestions.length) {
+                triggerWin();
+                return;
+            }
+            const qData = htmlQuestions[currentHtmlQ];
+            document.getElementById('html-qnum').innerText = currentHtmlQ + 1;
+            document.getElementById('html-question').innerText = qData.q;
+            const optContainer = document.getElementById('html-options');
+            optContainer.innerHTML = '';
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkHtmlAnswer(idx, qData.ans);
+                optContainer.appendChild(btn);
+            });
+        }
+
+        function checkHtmlAnswer(selected, correct) {
+            playSound('cute_click');
+            if (selected === correct) {
+                currentHtmlQ++;
+                let pct = (currentHtmlQ / htmlQuestions.length) * 100;
+                document.getElementById('pbar-html').style.width = pct + '%';
+                loadHtmlQuestion();
+            } else {
+                alert('Неверный ответ!');
+            }
+        }
+
+        // --- 4. Поле Чудес ---
+        const fomWords = [
+            { word: "СКРИПТ", hint: "Сценарий на JavaScript" },
+            { word: "БРАУЗЕР", hint: "Программа для просмотра веб-страниц" },
+            { word: "СЕРВЕР", hint: "Удаленный хост для сайтов" }
+        ];
+        let activeFOM = null, revealedLetters = [], botFomProgress = 0;
+
+        function initFOMGame() {
+            activeFOM = fomWords[Math.floor(Math.random() * fomWords.length)];
+            revealedLetters = new Array(activeFOM.word.length).fill(false);
+            botFomProgress = 0;
+            document.getElementById('pbar-fom').style.width = '0%';
+            document.getElementById('pbar-botfom').style.width = '0%';
+            document.getElementById('fom-hint').innerText = 'Подсказка: ' + activeFOM.hint;
+            renderFOMWord();
+
+            stopBotRace();
+            botTimer = setInterval(() => {
+                botFomProgress += 25;
+                document.getElementById('pbar-botfom').style.width = botFomProgress + '%';
+                if (botFomProgress >= 100) triggerLose();
+            }, 2000);
+        }
+
+        function renderFOMWord() {
+            const container = document.getElementById('fom-word-container');
+            container.innerHTML = '';
+            activeFOM.word.split('').forEach((char, idx) => {
+                const box = document.createElement('div');
+                box.className = 'letter-box';
+                box.innerText = revealedLetters[idx] ? char : '_';
+                container.appendChild(box);
+            });
+            if (revealedLetters.every(v => v)) {
+                triggerWin();
+            }
+        }
+
+        function fomGuessLetter() {
+            playSound('cute_click');
+            const input = document.getElementById('fom-letter-input');
+            const letter = input.value.toUpperCase();
+            input.value = '';
+            if (!letter) return;
+
+            let found = false;
+            activeFOM.word.split('').forEach((char, idx) => {
+                if (char === letter) {
+                    revealedLetters[idx] = true;
+                    found = true;
+                }
+            });
+            renderFOMWord();
+            let openedCount = revealedLetters.filter(v => v).length;
+            let pct = (openedCount / activeFOM.word.length) * 100;
+            document.getElementById('pbar-fom').style.width = pct + '%';
+            if (!found) alert('Такой буквы нет!');
+        }
+
+        // --- 5. Кто хочет стать миллионером ---
+        const milQuestions = [
+            { q: "Какой тег создает параграф в HTML?", options: ["<p>", "<text>", "<par>", "<pg>"], ans: 0, prize: "1,000 руб." },
+            { q: "Что означает аббревиатура CSS?", options: ["Computer Style Sheets", "Cascading Style Sheets", "Creative Style System", "Colorful Style Sheets"], ans: 1, prize: "10,000 руб." },
+            { q: "Какой язык программирования работает прямо в браузере?", options: ["Python", "C++", "JavaScript", "Java"], ans: 2, prize: "100,000 руб." },
+            { q: "Какой метод используется для вывода данных в консоль JS?", options: ["print()", "console.log()", "echo()", "write()"], ans: 1, prize: "1,000,000 руб." }
+        ];
+        let currentMilStep = 0, botMilProgress = 0;
+
+        function initMillionaire() {
+            currentMilStep = 0;
+            botMilProgress = 0;
+            document.getElementById('pbar-mil').style.width = '0%';
+            document.getElementById('pbar-botmil').style.width = '0%';
+            loadMilQuestion();
+
+            stopBotRace();
+            botTimer = setInterval(() => {
+                botMilProgress += 25;
+                document.getElementById('pbar-botmil').style.width = botMilProgress + '%';
+                if (botMilProgress >= 100) triggerLose();
+            }, 2500);
+        }
+
+        function loadMilQuestion() {
+            if (currentMilStep >= milQuestions.length) {
+                triggerWin();
+                return;
+            }
+            const qData = milQuestions[currentMilStep];
+            document.getElementById('mil-step').innerText = currentMilStep + 1;
+            document.getElementById('mil-prize').innerText = 'Приз: ' + qData.prize;
+            document.getElementById('mil-question').innerText = qData.q;
+            const optContainer = document.getElementById('mil-options');
+            optContainer.innerHTML = '';
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkMilAnswer(idx, qData.ans);
+                optContainer.appendChild(btn);
+            });
+        }
+
+        function checkMilAnswer(selected, correct) {
+            playSound('cute_click');
+            if (selected === correct) {
+                currentMilStep++;
+                let pct = (currentMilStep / milQuestions.length) * 100;
+                document.getElementById('pbar-mil').style.width = pct + '%';
+                loadMilQuestion();
+            } else {
+                triggerLose();
+            }
+        }
+
+        // --- 6. Игра «15» ---
+        let fifteenBoard = [];
+        let botFifteenProgress = 0;
+
+        function initFifteen() {
+            botFifteenProgress = 0;
+            document.getElementById('pbar-fifteen').style.width = '0%';
+            document.getElementById('pbar-botfifteen').style.width = '0%';
+            fifteenBoard = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, ""];
+            shuffleFifteen();
+            renderFifteen();
+
+            stopBotRace();
+            botTimer = setInterval(() => {
+                botFifteenProgress += 20;
+                document.getElementById('pbar-botfifteen').style.width = botFifteenProgress + '%';
+                if (botFifteenProgress >= 100) triggerLose();
+            }, 1800);
+        }
+
+        function shuffleFifteen() {
+            for (let i = 0; i < 50; i++) {
+                let emptyIdx = fifteenBoard.indexOf("");
+                let validMoves = [];
+                let row = Math.floor(emptyIdx / 4), col = emptyIdx % 4;
+                if (row > 0) validMoves.push(emptyIdx - 4);
+                if (row < 3) validMoves.push(emptyIdx + 4);
+                if (col > 0) validMoves.push(emptyIdx - 1);
+                if (col < 3) validMoves.push(emptyIdx + 1);
+                let moveIdx = validMoves[Math.floor(Math.random() * validMoves.length)];
+                fifteenBoard[emptyIdx] = fifteenBoard[moveIdx];
+                fifteenBoard[moveIdx] = "";
+            }
+        }
+
+        function renderFifteen() {
+            const board = document.getElementById('fifteen-board');
+            board.innerHTML = '';
+            fifteenBoard.forEach((val, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'fifteen-tile' + (val === "" ? ' empty' : '');
+                btn.innerText = val;
+                btn.onclick = () => moveFifteen(idx);
+                board.appendChild(btn);
+            });
+
+            // Проверка победы
+            const winState = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, ""];
+            if (fifteenBoard.every((v, i) => v === winState[i])) {
+                document.getElementById('pbar-fifteen').style.width = '100%';
+                triggerWin();
+            }
+        }
+
+        function moveFifteen(idx) {
+            playSound('cute_click');
+            let emptyIdx = fifteenBoard.indexOf("");
+            let r1 = Math.floor(idx / 4), c1 = idx % 4;
+            let r2 = Math.floor(emptyIdx / 4), c2 = emptyIdx % 4;
+            if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
+                fifteenBoard[emptyIdx] = fifteenBoard[idx];
+                fifteenBoard[idx] = "";
+                renderFifteen();
+                document.getElementById('pbar-fifteen').style.width = '50%';
+            }
+        }
+    </script>
+</body>
+</html>
